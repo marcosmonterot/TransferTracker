@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-search me-2"></i>Search & Filter Players
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Search input -->
+                    <div class="col-md-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="search-input" class="form-control" placeholder="Search players by name, club, nationality...">
+                        </div>
+                    </div>
+                    
+                    <!-- Filter dropdown for club -->
+                    <div class="col-md-3">
+                        <label for="club-filter" class="form-label">Club</label>
+                        <select id="club-filter" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filter dropdown for position -->
+                    <div class="col-md-3">
+                        <label for="position-filter" class="form-label">Position</label>
+                        <select id="position-filter" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filter dropdown for nationality -->
+                    <div class="col-md-3">
+                        <label for="nationality-filter" class="form-label">Nationality</label>
+                        <select id="nationality-filter" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filter dropdown for market value -->
+                    <div class="col-md-3">
+                        <label for="market-value-filter" class="form-label">Market Value</label>
+                        <select id="market-value-filter" class="form-select">
+                            <option value="">All</option>
+                            <option value="elite">Elite (90%+)</option>
+                            <option value="high">High (70-89%)</option>
+                            <option value="medium">Medium (40-69%)</option>
+                            <option value="low">Low (<40%)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sorting dropdown -->
+                    <div class="col-md-3">
+                        <label for="sort-select" class="form-label">Sort By</label>
+                        <select id="sort-select" class="form-select">
+                            <option value="">Default</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="club-asc">Club (A-Z)</option>
+                            <option value="club-desc">Club (Z-A)</option>
+                            <option value="position-asc">Position (A-Z)</option>
+                            <option value="position-desc">Position (Z-A)</option>
+                            <option value="nationality-asc">Nationality (A-Z)</option>
+                            <option value="nationality-desc">Nationality (Z-A)</option>
+                            <option value="market_value-asc">Market Value (Low to High)</option>
+                            <option value="market_value-desc">Market Value (High to Low)</option>
+                            <option value="percentile-desc">Percentile (High to Low)</option>
+                            <option value="percentile-asc">Percentile (Low to High)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Favorites checkbox -->
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="favorites-filter">
+                            <label class="form-check-label" for="favorites-filter">
+                                <i class="fas fa-star text-warning me-1"></i>Only show favorites
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Reset filters button -->
+                    <div class="col-md-3 d-flex align-items-end justify-content-end">
+                        <button class="btn btn-secondary" onclick="resetFilters()">
+                            <i class="fas fa-sync-alt me-2"></i>Reset Filters
+                        </button>
+                    </div>
+                    
+                    <!-- Player count -->
+                    <div class="col-md-3 d-flex align-items-end justify-content-end">
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-users me-1"></i>
+                            Players: <span id="player-count">0</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active filters display -->
+<div class="mb-4" id="active-filters-container">
+    <div class="d-flex flex-wrap" id="active-filters">
+        <!-- Active filters will be added here dynamically -->
+    </div>
+</div>
+
+<!-- Error container -->
+<div id="error-container" class="error-message d-none"></div>
+
+<!-- Loading spinner -->
+<div id="loading-spinner" class="loading-container">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<!-- Player cards container -->
+<div class="row" id="players-container">
+    <!-- Player cards will be added here dynamically -->
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-info">
+                <h4 class="mb-0 text-dark">
+                    <i class="fas fa-info-circle me-2"></i>About Percentile Scores
+                </h4>
+            </div>
+            <div class="card-body">
+                <p>The percentile score shown on each player card represents where the player's market value ranks among all La Liga players:</p>
+                
+                <div class="row mt-3">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="percentile-badge percentile-elite mx-auto mb-2">90+</div>
+                        <h5>Elite</h5>
+                        <p class="small">Top 10% of player market values</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="percentile-badge percentile-good mx-auto mb-2">70+</div>
+                        <h5>High Value</h5>
+                        <p class="small">70-89% percentile of market values</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="percentile-badge percentile-average mx-auto mb-2">40+</div>
+                        <h5>Medium Value</h5>
+                        <p class="small">40-69% percentile of market values</p>
+                    </div>
+                    
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="percentile-badge percentile-below mx-auto mb-2"><40</div>
+                        <h5>Lower Value</h5>
+                        <p class="small">Below 40% percentile of market values</p>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Tip:</strong> Use the favorites feature to keep track of players you're interested in, and add comments to remember why you marked them!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

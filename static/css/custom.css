@@ -1,0 +1,122 @@
+/* Custom styles for football players app */
+
+.player-card {
+    transition: all 0.3s ease;
+}
+
+.player-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.percentile-badge {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1.2rem;
+    position: absolute;
+    top: -15px;
+    right: -15px;
+    border: 3px solid var(--bs-dark);
+}
+
+/* Percentile badge colors */
+.percentile-elite {
+    background-color: var(--bs-danger);
+    color: white;
+}
+
+.percentile-good {
+    background-color: var(--bs-warning);
+    color: black;
+}
+
+.percentile-average {
+    background-color: var(--bs-info);
+    color: black;
+}
+
+.percentile-below {
+    background-color: var(--bs-secondary);
+    color: white;
+}
+
+/* Favorite star */
+.favorite-btn {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.favorite-btn:hover {
+    transform: scale(1.2);
+}
+
+.favorite-icon.active {
+    color: var(--bs-warning);
+}
+
+/* Loading spinner */
+.loading-container {
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Comment box */
+.comment-box {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+/* Football field background for cards */
+.football-bg {
+    background: linear-gradient(to bottom, 
+        rgba(0, 100, 0, 0.2),
+        rgba(0, 100, 0, 0.3)
+    );
+    background-size: 20px 20px;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+}
+
+/* Error message */
+.error-message {
+    padding: 20px;
+    text-align: center;
+    background-color: var(--bs-danger);
+    color: white;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+/* Filter badges */
+.filter-badge {
+    cursor: pointer;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.filter-badge:hover {
+    opacity: 0.8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .percentile-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+        top: -10px;
+        right: -10px;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+    }
+}

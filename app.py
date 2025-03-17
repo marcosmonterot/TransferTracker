@@ -102,6 +102,9 @@ def get_players():
         player['favorite'] = player['id'] in user_data.get('favorites', [])
         player['comment'] = user_data.get('comments', {}).get(player['id'], '')
     
+    # Sort players by percentile in descending order (highest first)
+    players = sorted(players, key=lambda x: x.get('percentile', 0), reverse=True)
+    
     return jsonify(players)
 
 @app.route('/api/toggle_favorite', methods=['POST'])

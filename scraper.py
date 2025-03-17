@@ -9,12 +9,12 @@ import os
 
 def scrape_transfermarkt():
     """
-    Scrapes FC Barcelona player data from Transfermarkt.
+    Scrapes the Spanish league player data from Transfermarkt.
     
     Returns:
-        list: A list of dictionaries containing Barcelona player data
+        list: A list of dictionaries containing player data
     """
-    logging.info("Starting scraping of FC Barcelona player data")
+    logging.info("Starting scraping of Transfermarkt")
     
     # Use sample data for testing
     SAMPLE_DATA_PATH = 'data/sample_players.json'
@@ -22,120 +22,41 @@ def scrape_transfermarkt():
     # Check if we already have sample data cached
     if os.path.exists(SAMPLE_DATA_PATH):
         try:
-            logging.info("Loading FC Barcelona data from cache")
+            logging.info("Loading sample data from cache")
             with open(SAMPLE_DATA_PATH, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
             logging.error(f"Error loading sample data: {str(e)}")
     
-    # Create FC Barcelona player data
+    # Create sample data for La Liga teams and players
+    sample_players = generate_sample_data()
+    
+    # Save sample data for future use
     try:
-        # Try to scrape real data from Transfermarkt
-        barcelona_players = scrape_barcelona_data()
-        
-        # If scraping fails, generate sample data as a fallback
-        if not barcelona_players:
-            barcelona_players = generate_barcelona_sample_data()
-        
-        # Save data for future use
         with open(SAMPLE_DATA_PATH, 'w', encoding='utf-8') as f:
-            json.dump(barcelona_players, f, ensure_ascii=False)
-            
-        return barcelona_players
+            json.dump(sample_players, f, ensure_ascii=False)
     except Exception as e:
-        logging.error(f"Error in scrape_transfermarkt: {str(e)}")
-        return generate_barcelona_sample_data()
+        logging.error(f"Error saving sample data: {str(e)}")
+    
+    return sample_players
 
-def scrape_barcelona_data():
+def generate_sample_data():
     """
-    Attempts to scrape real FC Barcelona player data from Transfermarkt.
+    Generates sample player data for La Liga teams.
     """
-    logging.info("Attempting to scrape real FC Barcelona data")
+    logging.info("Generating sample player data")
     
-    # Base URL for FC Barcelona
-    base_url = "https://www.transfermarkt.com"
-    barcelona_url = f"{base_url}/fc-barcelona/startseite/verein/131"
-    
-    # Headers to avoid being blocked
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-    }
-    
-    barcelona_players = []
-    
-    try:
-        # Get the Barcelona team page
-        response = requests.get(barcelona_url, headers=headers, timeout=5)
-        response.raise_for_status()
-        team_soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Find the players table
-        players_table = team_soup.select_one("table.items")
-        
-        if not players_table:
-            logging.warning("No players table found for FC Barcelona")
-            return []
-        
-        # Extract players data
-        for player_row in players_table.select("tr.odd, tr.even"):
-            try:
-                # Player name and ID
-                player_link = player_row.select_one("td.hauptlink a")
-                if not player_link:
-                    continue
-                    
-                player_name = player_link.text.strip()
-                player_url = player_link['href']
-                player_id = re.search(r'/spieler/(\d+)', player_url)
-                player_id = player_id.group(1) if player_id else "unknown"
-                
-                # Position
-                position_cell = player_row.select_one("td.posrela")
-                position = position_cell.text.strip() if position_cell else "Unknown"
-                
-                # Nationality
-                nationality_img = player_row.select_one("td.zentriert img.flaggenrahmen")
-                nationality = nationality_img['title'] if nationality_img and nationality_img.has_attr('title') else "Unknown"
-                
-                # Market value
-                market_value_cell = player_row.select_one("td.rechts")
-                market_value = market_value_cell.text.strip() if market_value_cell else "€0"
-                
-                # Create player object
-                player = {
-                    'id': player_id,
-                    'name': player_name,
-                    'position': position,
-                    'nationality': nationality,
-                    'club': "FC Barcelona",
-                    'market_value': market_value
-                }
-                
-                barcelona_players.append(player)
-                
-            except Exception as e:
-                logging.error(f"Error processing Barcelona player: {str(e)}")
-        
-        logging.info(f"Successfully scraped {len(barcelona_players)} Barcelona players")
-        return barcelona_players
-        
-    except Exception as e:
-        logging.error(f"Error scraping Barcelona data: {str(e)}")
-        return []
-
-def generate_barcelona_sample_data():
-    """
-    Generates sample FC Barcelona player data.
-    """
-    logging.info("Generating sample FC Barcelona player data")
-    
-    # FC Barcelona only
     teams = [
+        {"name": "Real Madrid", "id": "418"},
         {"name": "FC Barcelona", "id": "131"},
+        {"name": "Atlético de Madrid", "id": "13"},
+        {"name": "Sevilla FC", "id": "368"},
+        {"name": "Real Sociedad", "id": "681"},
+        {"name": "Real Betis", "id": "150"},
+        {"name": "Villarreal CF", "id": "1050"},
+        {"name": "Athletic Bilbao", "id": "621"},
+        {"name": "Valencia CF", "id": "1049"},
+        {"name": "Celta Vigo", "id": "940"},
     ]
     
     positions = [

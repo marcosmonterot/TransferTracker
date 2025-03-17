@@ -215,22 +215,12 @@ function handleSearch() {
 
 // Sort players based on selected option
 function sortPlayers() {
-    const sortBy = sortSelect.value;
-    
-    if (!sortBy) return;
-    
-    const [field, direction] = sortBy.split('-');
-    const multiplier = direction === 'asc' ? 1 : -1;
+    // Always sort by percentile in descending order regardless of select value
+    // This ensures players are always sorted by their percentile scores (highest first)
     
     filteredPlayers.sort((a, b) => {
-        if (field === 'name' || field === 'club' || field === 'position' || field === 'nationality') {
-            return multiplier * a[field].localeCompare(b[field]);
-        } else if (field === 'market_value') {
-            return multiplier * (parseMarketValue(a.market_value) - parseMarketValue(b.market_value));
-        } else if (field === 'percentile') {
-            return multiplier * (a.percentile - b.percentile);
-        }
-        return 0;
+        // Negative multiplier for descending order (highest first)
+        return -1 * (a.percentile - b.percentile);
     });
     
     displayPlayers();

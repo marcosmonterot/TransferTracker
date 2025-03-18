@@ -377,9 +377,13 @@ function createPlayerCard(player) {
                 </div>
                 <div class="${percentileClass} percentile-badge">${player.percentile}</div>
                 <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-futbol me-2"></i>Club:</span>
-                        <span class="fw-bold">${player.club}</span>
+                        <span class="fw-bold d-flex align-items-center">
+                            <img src="${player.club_badge_url}" alt="${player.club}" class="club-badge me-2" 
+                                onerror="this.style.display='none';">
+                            ${player.club}
+                        </span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between">
                         <span><i class="fas fa-running me-2"></i>Position:</span>

@@ -83,6 +83,13 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* Club badge styling */
+.club-badge {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
 /* Football field background for cards - light theme */
 .football-bg {
     background: linear-gradient(to bottom, 

@@ -47,16 +47,56 @@ def generate_sample_data():
     logging.info("Generating sample player data")
     
     teams = [
-        {"name": "Real Madrid", "id": "418"},
-        {"name": "FC Barcelona", "id": "131"},
-        {"name": "Atlético de Madrid", "id": "13"},
-        {"name": "Sevilla FC", "id": "368"},
-        {"name": "Real Sociedad", "id": "681"},
-        {"name": "Real Betis", "id": "150"},
-        {"name": "Villarreal CF", "id": "1050"},
-        {"name": "Athletic Bilbao", "id": "621"},
-        {"name": "Valencia CF", "id": "1049"},
-        {"name": "Celta Vigo", "id": "940"},
+        {
+            "name": "Real Madrid", 
+            "id": "418",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg"
+        },
+        {
+            "name": "FC Barcelona", 
+            "id": "131",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg"
+        },
+        {
+            "name": "Atlético de Madrid", 
+            "id": "13",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg"
+        },
+        {
+            "name": "Sevilla FC", 
+            "id": "368",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg"
+        },
+        {
+            "name": "Real Sociedad", 
+            "id": "681",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/f/f1/Real_Sociedad_logo.svg"
+        },
+        {
+            "name": "Real Betis", 
+            "id": "150",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/1/13/Real_betis_logo.svg"
+        },
+        {
+            "name": "Villarreal CF", 
+            "id": "1050",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/1/13/Villarreal_CF_logo.svg"
+        },
+        {
+            "name": "Athletic Bilbao", 
+            "id": "621",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/9/98/Athletic_Club_Bilbao_logo.svg"
+        },
+        {
+            "name": "Valencia CF", 
+            "id": "1049",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/c/ce/Valenciacf.svg"
+        },
+        {
+            "name": "Celta Vigo", 
+            "id": "940",
+            "badge_url": "https://upload.wikimedia.org/wikipedia/en/1/12/RC_Celta_de_Vigo_logo.svg"
+        },
     ]
     
     positions = [
@@ -144,7 +184,8 @@ def generate_sample_data():
                     'nationality': nationality,
                     'club': team["name"],
                     'market_value': market_value,
-                    'photo_url': photo_url
+                    'photo_url': photo_url,
+                    'club_badge_url': team["badge_url"]
                 }
                 
                 all_players.append(player)

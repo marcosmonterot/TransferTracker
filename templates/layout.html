@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>La Liga Player Tracker</title>
+    <title>Análisis de Jugadores de La Liga</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
@@ -17,21 +17,27 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="/">
                 <i class="fas fa-futbol me-2"></i>
-                La Liga Player Tracker
+                Análisis de Jugadores de La Liga
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <button id="refresh-data" class="btn btn-primary">
-                            <i class="fas fa-sync-alt me-2"></i>Refresh Data
-                        </button>
+                        <a class="nav-link active" href="/"><i class="fas fa-home me-1"></i> Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#favListsModal">
+                            <i class="fas fa-star me-1"></i> Listas de Favoritos
+                        </a>
                     </li>
                 </ul>
+                <button id="refresh-data" class="btn btn-primary">
+                    <i class="fas fa-sync-alt me-2"></i>Actualizar Datos
+                </button>
             </div>
         </div>
     </nav>
@@ -40,21 +46,165 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Modal para gestionar listas de favoritos -->
+    <div class="modal fade" id="favListsModal" tabindex="-1" aria-labelledby="favListsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="favListsModalLabel"><i class="fas fa-star me-2"></i>Listas de Favoritos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Mis Listas</h6>
+                            <div class="list-group" id="favorite-lists-container">
+                                <!-- Las listas se cargarán aquí dinámicamente -->
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6" id="list-details-container">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0" id="selected-list-name">Selecciona una lista</h6>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary me-1 d-none" id="edit-list-btn">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger d-none" id="delete-list-btn">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="small text-muted" id="selected-list-description">
+                                        Los detalles de la lista aparecerán aquí
+                                    </p>
+                                    <div id="list-players-container">
+                                        <!-- Los jugadores de la lista seleccionada se mostrarán aquí -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6>Crear Nueva Lista</h6>
+                            <form id="new-list-form">
+                                <div class="mb-3">
+                                    <label for="new-list-name" class="form-label">Nombre de la lista</label>
+                                    <input type="text" class="form-control" id="new-list-name" placeholder="Ej: Delanteros prometedores" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new-list-description" class="form-label">Descripción (opcional)</label>
+                                    <textarea class="form-control" id="new-list-description" rows="2" placeholder="Ej: Jugadores jóvenes con potencial"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-plus me-1"></i> Crear Lista
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar una lista -->
+    <div class="modal fade" id="editListModal" tabindex="-1" aria-labelledby="editListModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editListModalLabel">Editar Lista</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-list-form">
+                        <input type="hidden" id="edit-list-id">
+                        <div class="mb-3">
+                            <label for="edit-list-name" class="form-label">Nombre de la lista</label>
+                            <input type="text" class="form-control" id="edit-list-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-list-description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="edit-list-description" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar eliminación de lista -->
+    <div class="modal fade" id="deleteListModal" tabindex="-1" aria-labelledby="deleteListModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteListModalLabel">Confirmar eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Estás seguro de que deseas eliminar la lista <strong id="delete-list-name"></strong>?</p>
+                    <p class="text-danger">Esta acción no se puede deshacer.</p>
+                    <input type="hidden" id="delete-list-id">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para seleccionar lista de favoritos -->
+    <div class="modal fade" id="selectFavListModal" tabindex="-1" aria-labelledby="selectFavListModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectFavListModalLabel">Añadir a lista de favoritos</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Selecciona la lista donde quieres añadir al jugador <strong id="player-name-to-add"></strong>:</p>
+                    <input type="hidden" id="player-id-to-add">
+                    <div class="list-group" id="select-list-container">
+                        <!-- Las listas se cargarán aquí dinámicamente -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-dark text-light py-4 mt-5">
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="fas fa-futbol me-2"></i>La Liga Player Tracker</h5>
+                    <h5><i class="fas fa-futbol me-2"></i>Análisis de Jugadores de La Liga</h5>
                     <p class="small">
-                        Track and analyze players from the Spanish La Liga. Data sourced from Transfermarkt.
+                        Seguimiento y análisis de jugadores de La Liga española. Datos obtenidos de Transfermarkt.
                     </p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="small">
-                        <i class="fas fa-info-circle me-2"></i>Data is refreshed daily or on demand.
+                        <i class="fas fa-info-circle me-2"></i>Los datos se actualizan diariamente o bajo demanda.
                     </p>
                     <p class="small">
-                        <i class="fas fa-chart-line me-2"></i>Percentile score represents player's market value relative to all La Liga players.
+                        <i class="fas fa-chart-line me-2"></i>La puntuación percentil representa el valor de mercado del jugador en relación con todos los jugadores de La Liga.
+                    </p>
+                    <p class="small">
+                        <i class="fas fa-star me-2"></i>Crea tus propias listas de favoritos para organizar jugadores por categorías.
                     </p>
                 </div>
             </div>

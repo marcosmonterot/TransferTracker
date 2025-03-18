@@ -36,8 +36,20 @@ document.addEventListener('DOMContentLoaded', () => {
     nationalityFilter.addEventListener('change', () => applyFilter('nationality', nationalityFilter.value));
     marketValueFilter.addEventListener('change', () => applyFilter('marketValue', marketValueFilter.value));
     favoritesFilter.addEventListener('change', () => applyFilter('favorites', favoritesFilter.checked));
-    sortSelect.addEventListener('change', sortPlayers);
+    sortSelect && sortSelect.addEventListener('change', sortPlayers);
     refreshButton.addEventListener('click', refreshData);
+    
+    // Setup favorite lists event listeners
+    document.getElementById('new-list-form').addEventListener('submit', createNewList);
+    document.getElementById('edit-list-form').addEventListener('submit', saveListChanges);
+    document.getElementById('confirm-delete-btn').addEventListener('click', deleteList);
+    document.getElementById('edit-list-btn').addEventListener('click', showEditListModal);
+    document.getElementById('delete-list-btn').addEventListener('click', showDeleteListModal);
+    
+    // Load favorite lists when modal is opened
+    document.getElementById('favListsModal').addEventListener('show.bs.modal', function () {
+        loadFavoriteLists('favorite-lists-container');
+    });
 });
 
 // Load players from API
@@ -349,8 +361,13 @@ function createPlayerCard(player) {
         <div class="card h-100 player-card football-bg" data-player-id="${player.id}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">${player.name}</h5>
-                <div class="favorite-btn" onclick="toggleFavorite('${player.id}')">
-                    <i class="fas fa-star favorite-icon ${player.favorite ? 'active' : ''}"></i>
+                <div class="d-flex">
+                    <button class="btn btn-sm btn-outline-warning me-2" onclick="addToFavoriteList('${player.id}', '${player.name}')">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <div class="favorite-btn" onclick="toggleFavorite('${player.id}')">
+                        <i class="fas fa-star favorite-icon ${player.favorite ? 'active' : ''}"></i>
+                    </div>
                 </div>
             </div>
             <div class="card-body position-relative">
@@ -378,7 +395,7 @@ function createPlayerCard(player) {
                         <p class="small m-0"><i class="fas fa-comment me-2"></i>${player.comment || ''}</p>
                     </div>
                     <div class="input-group">
-                        <input type="text" class="form-control form-control-sm" placeholder="Add comment" 
+                        <input type="text" class="form-control form-control-sm" placeholder="Añadir comentario" 
                                id="comment-input-${player.id}" value="${player.comment || ''}">
                         <button class="btn btn-sm btn-outline-primary" onclick="saveComment('${player.id}')">
                             <i class="fas fa-save"></i>
@@ -390,6 +407,20 @@ function createPlayerCard(player) {
     `;
     
     return col;
+}
+
+// Abrir el modal para añadir a una lista de favoritos
+function addToFavoriteList(playerId, playerName) {
+    // Guardar el ID del jugador en el modal
+    document.getElementById('player-id-to-add').value = playerId;
+    document.getElementById('player-name-to-add').textContent = playerName;
+    
+    // Cargar las listas de favoritos
+    loadFavoriteLists('select-list-container', playerId);
+    
+    // Mostrar el modal
+    const selectFavListModal = new bootstrap.Modal(document.getElementById('selectFavListModal'));
+    selectFavListModal.show();
 }
 
 // Toggle favorite status for a player

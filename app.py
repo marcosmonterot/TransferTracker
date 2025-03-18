@@ -23,15 +23,47 @@ os.makedirs('data', exist_ok=True)
 # Initialize user data file if it doesn't exist
 if not os.path.exists(USER_DATA_FILE):
     with open(USER_DATA_FILE, 'w') as f:
-        json.dump({"favorites": [], "comments": {}}, f)
+        json.dump({
+            "favorites": [],
+            "comments": {},
+            "favorite_lists": {
+                "default": {
+                    "name": "Favoritos",
+                    "description": "Lista de favoritos predeterminada",
+                    "players": []
+                }
+            }
+        }, f)
 
 def get_user_data():
     try:
         with open(USER_DATA_FILE, 'r') as f:
-            return json.load(f)
+            data = json.load(f)
+            
+            # Ensure favorite_lists exists (for backward compatibility)
+            if "favorite_lists" not in data:
+                data["favorite_lists"] = {
+                    "default": {
+                        "name": "Favoritos",
+                        "description": "Lista de favoritos predeterminada",
+                        "players": data.get("favorites", [])
+                    }
+                }
+            
+            return data
     except (FileNotFoundError, json.JSONDecodeError):
         # Return default structure if file doesn't exist or is invalid
-        return {"favorites": [], "comments": {}}
+        return {
+            "favorites": [],
+            "comments": {},
+            "favorite_lists": {
+                "default": {
+                    "name": "Favoritos",
+                    "description": "Lista de favoritos predeterminada",
+                    "players": []
+                }
+            }
+        }
 
 def save_user_data(data):
     with open(USER_DATA_FILE, 'w') as f:
@@ -110,22 +142,54 @@ def get_players():
 @app.route('/api/toggle_favorite', methods=['POST'])
 def toggle_favorite():
     player_id = request.json.get('player_id')
+    list_id = request.json.get('list_id', 'default')  # Use default list if none provided
+    
     if not player_id:
         return jsonify({"success": False, "message": "No player ID provided"}), 400
     
     user_data = get_user_data()
     
-    if player_id in user_data.get('favorites', []):
-        user_data['favorites'].remove(player_id)
+    # Initialize favorite_lists if needed
+    if 'favorite_lists' not in user_data:
+        user_data['favorite_lists'] = {
+            "default": {
+                "name": "Favoritos",
+                "description": "Lista de favoritos predeterminada",
+                "players": []
+            }
+        }
+    
+    # Ensure the list exists
+    if list_id not in user_data['favorite_lists']:
+        return jsonify({"success": False, "message": "List not found"}), 404
+    
+    # Toggle player in the specified list
+    list_players = user_data['favorite_lists'][list_id]['players']
+    if player_id in list_players:
+        list_players.remove(player_id)
         status = False
     else:
-        if 'favorites' not in user_data:
-            user_data['favorites'] = []
-        user_data['favorites'].append(player_id)
+        list_players.append(player_id)
         status = True
     
+    # For backwards compatibility
+    if list_id == 'default':
+        if status:
+            if 'favorites' not in user_data:
+                user_data['favorites'] = []
+            if player_id not in user_data['favorites']:
+                user_data['favorites'].append(player_id)
+        else:
+            if player_id in user_data.get('favorites', []):
+                user_data['favorites'].remove(player_id)
+    
     save_user_data(user_data)
-    return jsonify({"success": True, "favorite": status})
+    return jsonify({
+        "success": True, 
+        "favorite": status,
+        "list_id": list_id,
+        "players": user_data['favorite_lists'][list_id]['players']
+    })
 
 @app.route('/api/add_comment', methods=['POST'])
 def add_comment():
@@ -144,6 +208,122 @@ def add_comment():
     save_user_data(user_data)
     
     return jsonify({"success": True})
+
+# API routes for favorite lists
+@app.route('/api/favorite_lists', methods=['GET'])
+def get_favorite_lists():
+    """Get all favorite lists"""
+    user_data = get_user_data()
+    return jsonify({"success": True, "lists": user_data.get('favorite_lists', {})})
+
+@app.route('/api/favorite_lists', methods=['POST'])
+def create_favorite_list():
+    """Create a new favorite list"""
+    list_name = request.json.get('name')
+    list_description = request.json.get('description', '')
+    
+    if not list_name:
+        return jsonify({"success": False, "message": "List name is required"}), 400
+    
+    user_data = get_user_data()
+    
+    # Generate a unique ID for the list
+    import uuid
+    list_id = str(uuid.uuid4())[:8]
+    
+    # Add the new list
+    if 'favorite_lists' not in user_data:
+        user_data['favorite_lists'] = {}
+        
+    user_data['favorite_lists'][list_id] = {
+        "name": list_name,
+        "description": list_description,
+        "players": []
+    }
+    
+    save_user_data(user_data)
+    return jsonify({"success": True, "list_id": list_id, "list": user_data['favorite_lists'][list_id]})
+
+@app.route('/api/favorite_lists/<list_id>', methods=['PUT'])
+def update_favorite_list(list_id):
+    """Update a favorite list's name or description"""
+    list_name = request.json.get('name')
+    list_description = request.json.get('description')
+    
+    user_data = get_user_data()
+    
+    if 'favorite_lists' not in user_data or list_id not in user_data['favorite_lists']:
+        return jsonify({"success": False, "message": "List not found"}), 404
+    
+    if list_name:
+        user_data['favorite_lists'][list_id]['name'] = list_name
+    
+    if list_description is not None:  # Allow empty descriptions
+        user_data['favorite_lists'][list_id]['description'] = list_description
+    
+    save_user_data(user_data)
+    return jsonify({"success": True, "list": user_data['favorite_lists'][list_id]})
+
+@app.route('/api/favorite_lists/<list_id>', methods=['DELETE'])
+def delete_favorite_list(list_id):
+    """Delete a favorite list"""
+    user_data = get_user_data()
+    
+    if 'favorite_lists' not in user_data or list_id not in user_data['favorite_lists']:
+        return jsonify({"success": False, "message": "List not found"}), 404
+    
+    # Don't allow deleting the default list
+    if list_id == 'default':
+        return jsonify({"success": False, "message": "Cannot delete default list"}), 400
+    
+    del user_data['favorite_lists'][list_id]
+    save_user_data(user_data)
+    return jsonify({"success": True})
+
+@app.route('/api/favorite_lists/<list_id>/players', methods=['POST'])
+def add_player_to_list(list_id):
+    """Add a player to a favorite list"""
+    player_id = request.json.get('player_id')
+    
+    if not player_id:
+        return jsonify({"success": False, "message": "Player ID is required"}), 400
+    
+    user_data = get_user_data()
+    
+    if 'favorite_lists' not in user_data or list_id not in user_data['favorite_lists']:
+        return jsonify({"success": False, "message": "List not found"}), 404
+    
+    # Add player if not already in the list
+    if player_id not in user_data['favorite_lists'][list_id]['players']:
+        user_data['favorite_lists'][list_id]['players'].append(player_id)
+    
+    # For backwards compatibility, also update the main favorites list
+    if list_id == 'default' and player_id not in user_data.get('favorites', []):
+        if 'favorites' not in user_data:
+            user_data['favorites'] = []
+        user_data['favorites'].append(player_id)
+    
+    save_user_data(user_data)
+    return jsonify({"success": True, "players": user_data['favorite_lists'][list_id]['players']})
+
+@app.route('/api/favorite_lists/<list_id>/players/<player_id>', methods=['DELETE'])
+def remove_player_from_list(list_id, player_id):
+    """Remove a player from a favorite list"""
+    user_data = get_user_data()
+    
+    if 'favorite_lists' not in user_data or list_id not in user_data['favorite_lists']:
+        return jsonify({"success": False, "message": "List not found"}), 404
+    
+    # Remove player if in the list
+    if player_id in user_data['favorite_lists'][list_id]['players']:
+        user_data['favorite_lists'][list_id]['players'].remove(player_id)
+    
+    # For backwards compatibility, also update the main favorites list
+    if list_id == 'default' and player_id in user_data.get('favorites', []):
+        user_data['favorites'].remove(player_id)
+    
+    save_user_data(user_data)
+    return jsonify({"success": True, "players": user_data['favorite_lists'][list_id]['players']})
 
 @app.route('/api/refresh_data', methods=['POST'])
 def refresh_data():

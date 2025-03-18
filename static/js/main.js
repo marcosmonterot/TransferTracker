@@ -373,7 +373,7 @@ function createPlayerCard(player) {
             <div class="card-body position-relative">
                 <div class="text-center mb-3">
                     <img src="${player.photo_url}" alt="${player.name}" class="player-photo img-fluid rounded" 
-                         onerror="this.src='https://via.placeholder.com/150x150?text=Sin+Foto';">
+                         onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(player.name)}&background=1e88e5&color=fff&size=150';">
                 </div>
                 <div class="${percentileClass} percentile-badge">${player.percentile}</div>
                 <ul class="list-group list-group-flush">

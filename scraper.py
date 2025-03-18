@@ -131,8 +131,11 @@ def generate_sample_data():
                 else:
                     market_value = market_values[random.randint(10, 19)]
                 
-                # Generar URL de foto de perfil basada en el ID del jugador para Transfermarkt
-                photo_url = f"https://img.a.transfermarkt.technology/portrait/big/{player_id}.jpg"
+                # Generar URL para avatar con las iniciales del jugador usando UI Avatars (servicio gratuito y confiable)
+                # Esto evita problemas con CORS o IDs incorrectos en Transfermarkt
+                name_parts = player_name.split()
+                initials = "".join([p[0] for p in name_parts if p])[:2]  # Obtener primeras 2 iniciales
+                photo_url = f"https://ui-avatars.com/api/?name={player_name}&background=1e88e5&color=fff&size=150"
                 
                 player = {
                     'id': str(player_id),

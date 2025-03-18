@@ -371,6 +371,10 @@ function createPlayerCard(player) {
                 </div>
             </div>
             <div class="card-body position-relative">
+                <div class="text-center mb-3">
+                    <img src="${player.photo_url}" alt="${player.name}" class="player-photo img-fluid rounded" 
+                         onerror="this.src='https://via.placeholder.com/150x150?text=Sin+Foto';">
+                </div>
                 <div class="${percentileClass} percentile-badge">${player.percentile}</div>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between">

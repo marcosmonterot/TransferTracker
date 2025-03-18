@@ -131,13 +131,17 @@ def generate_sample_data():
                 else:
                     market_value = market_values[random.randint(10, 19)]
                 
+                # Generar URL de foto de perfil basada en el ID del jugador para Transfermarkt
+                photo_url = f"https://img.a.transfermarkt.technology/portrait/big/{player_id}.jpg"
+                
                 player = {
                     'id': str(player_id),
                     'name': player_name,
                     'position': position,
                     'nationality': nationality,
                     'club': team["name"],
-                    'market_value': market_value
+                    'market_value': market_value,
+                    'photo_url': photo_url
                 }
                 
                 all_players.append(player)

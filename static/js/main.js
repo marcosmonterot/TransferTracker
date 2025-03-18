@@ -613,3 +613,469 @@ function refreshData() {
         showError('Failed to refresh data. Please try again later.');
     });
 }
+
+// ==================== FUNCIONES PARA GESTIONAR LISTAS DE FAVORITOS ====================
+
+// Cargar listas de favoritos desde el servidor
+function loadFavoriteLists(containerId, selectedPlayerId = null) {
+    const container = document.getElementById(containerId);
+    
+    // Mostrar spinner de carga
+    container.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    `;
+    
+    fetch('/api/favorite_lists')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Limpiar contenedor
+                container.innerHTML = '';
+                
+                // Verificar si hay listas
+                if (Object.keys(data.lists).length === 0) {
+                    container.innerHTML = `
+                        <div class="alert alert-info">
+                            No tienes listas de favoritos. ¡Crea una nueva!
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Ordenar listas (default primero, luego por nombre)
+                const sortedLists = Object.entries(data.lists).sort((a, b) => {
+                    if (a[0] === 'default') return -1;
+                    if (b[0] === 'default') return 1;
+                    return a[1].name.localeCompare(b[1].name);
+                });
+                
+                // Añadir cada lista al contenedor
+                sortedLists.forEach(([listId, list]) => {
+                    const listElement = document.createElement('a');
+                    listElement.href = '#';
+                    listElement.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                    listElement.setAttribute('data-list-id', listId);
+                    
+                    // Si estamos en el modal de selección para añadir jugador
+                    if (selectedPlayerId) {
+                        listElement.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            addPlayerToList(listId, selectedPlayerId);
+                        });
+                        
+                        // Verificar si el jugador ya está en esta lista
+                        const isInList = list.players.includes(selectedPlayerId);
+                        if (isInList) {
+                            listElement.classList.add('active');
+                        }
+                    } else {
+                        // Estamos en el modal principal de gestión de listas
+                        listElement.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            showListDetails(listId, list);
+                        });
+                    }
+                    
+                    listElement.innerHTML = `
+                        <div>
+                            <i class="fas fa-${listId === 'default' ? 'star' : 'list'} me-2"></i>
+                            ${list.name}
+                        </div>
+                        <span class="badge bg-primary rounded-pill">${list.players.length}</span>
+                    `;
+                    
+                    container.appendChild(listElement);
+                });
+                
+                // Si no estamos en el modal de selección, mostrar detalles de la primera lista
+                if (!selectedPlayerId && sortedLists.length > 0) {
+                    showListDetails(sortedLists[0][0], sortedLists[0][1]);
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error cargando listas: ${data.message || 'Error desconocido'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando listas de favoritos:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    Error de conexión al cargar listas.
+                </div>
+            `;
+        });
+}
+
+// Mostrar detalles de una lista seleccionada
+function showListDetails(listId, list) {
+    const nameElement = document.getElementById('selected-list-name');
+    const descriptionElement = document.getElementById('selected-list-description');
+    const playersContainer = document.getElementById('list-players-container');
+    const editButton = document.getElementById('edit-list-btn');
+    const deleteButton = document.getElementById('delete-list-btn');
+    
+    // Actualizar nombre y descripción
+    nameElement.textContent = list.name;
+    descriptionElement.textContent = list.description || 'Sin descripción';
+    
+    // Resaltar la lista seleccionada
+    document.querySelectorAll('#favorite-lists-container .list-group-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`#favorite-lists-container [data-list-id="${listId}"]`).classList.add('active');
+    
+    // Mostrar/ocultar botones de edición y eliminación
+    if (listId === 'default') {
+        // Solo permitir editar la lista predeterminada, no eliminarla
+        editButton.classList.remove('d-none');
+        deleteButton.classList.add('d-none');
+    } else {
+        editButton.classList.remove('d-none');
+        deleteButton.classList.remove('d-none');
+    }
+    
+    // Cargar jugadores de la lista
+    playersContainer.innerHTML = `
+        <div class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+    `;
+    
+    // Verificar si hay jugadores en la lista
+    if (list.players.length === 0) {
+        playersContainer.innerHTML = `
+            <div class="alert alert-info">
+                No hay jugadores en esta lista.
+            </div>
+        `;
+        return;
+    }
+    
+    // Filtrar jugadores de la lista del array global
+    const listPlayers = allPlayers.filter(player => list.players.includes(player.id));
+    
+    if (listPlayers.length === 0) {
+        playersContainer.innerHTML = `
+            <div class="alert alert-warning">
+                Los jugadores de esta lista no están cargados actualmente.
+            </div>
+        `;
+        return;
+    }
+    
+    // Crear mini tarjetas para cada jugador
+    playersContainer.innerHTML = '';
+    listPlayers.forEach(player => {
+        const playerCard = document.createElement('div');
+        playerCard.className = 'card mb-2';
+        
+        // Determinar clase de percentil
+        let percentileClass = 'text-danger';
+        if (player.percentile >= 90) {
+            percentileClass = 'text-success';
+        } else if (player.percentile >= 70) {
+            percentileClass = 'text-primary';
+        } else if (player.percentile >= 40) {
+            percentileClass = 'text-warning';
+        }
+        
+        playerCard.innerHTML = `
+            <div class="card-body p-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${player.name}</strong>
+                        <small class="d-block text-muted">${player.position} | ${player.club}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge ${percentileClass} me-2">${player.percentile}</span>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="removePlayerFromList('${listId}', '${player.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        playersContainer.appendChild(playerCard);
+    });
+}
+
+// Crear una nueva lista de favoritos
+function createNewList(event) {
+    event.preventDefault();
+    
+    const nameInput = document.getElementById('new-list-name');
+    const descriptionInput = document.getElementById('new-list-description');
+    
+    const name = nameInput.value.trim();
+    const description = descriptionInput.value.trim();
+    
+    if (!name) {
+        alert('El nombre de la lista es obligatorio');
+        return;
+    }
+    
+    fetch('/api/favorite_lists', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Limpiar formulario
+            nameInput.value = '';
+            descriptionInput.value = '';
+            
+            // Recargar listas
+            loadFavoriteLists('favorite-lists-container');
+            
+            // Mostrar mensaje de éxito
+            alert(`Lista "${name}" creada con éxito`);
+        } else {
+            alert('Error al crear la lista: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error creando lista:', error);
+        alert('Error de conexión al crear la lista');
+    });
+}
+
+// Mostrar modal para editar una lista
+function showEditListModal() {
+    const listId = document.querySelector('#favorite-lists-container .list-group-item.active').getAttribute('data-list-id');
+    const listName = document.getElementById('selected-list-name').textContent;
+    const listDescription = document.getElementById('selected-list-description').textContent;
+    
+    // Llenar el formulario de edición
+    document.getElementById('edit-list-id').value = listId;
+    document.getElementById('edit-list-name').value = listName;
+    document.getElementById('edit-list-description').value = listDescription === 'Sin descripción' ? '' : listDescription;
+    
+    // Mostrar el modal
+    const editListModal = new bootstrap.Modal(document.getElementById('editListModal'));
+    editListModal.show();
+}
+
+// Guardar cambios en una lista
+function saveListChanges(event) {
+    event.preventDefault();
+    
+    const listId = document.getElementById('edit-list-id').value;
+    const name = document.getElementById('edit-list-name').value.trim();
+    const description = document.getElementById('edit-list-description').value.trim();
+    
+    if (!name) {
+        alert('El nombre de la lista es obligatorio');
+        return;
+    }
+    
+    fetch(`/api/favorite_lists/${listId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById('editListModal')).hide();
+            
+            // Recargar listas
+            loadFavoriteLists('favorite-lists-container');
+            
+            // Mostrar mensaje de éxito
+            alert(`Lista "${name}" actualizada con éxito`);
+        } else {
+            alert('Error al actualizar la lista: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error actualizando lista:', error);
+        alert('Error de conexión al actualizar la lista');
+    });
+}
+
+// Mostrar modal para confirmar eliminación de lista
+function showDeleteListModal() {
+    const listId = document.querySelector('#favorite-lists-container .list-group-item.active').getAttribute('data-list-id');
+    const listName = document.getElementById('selected-list-name').textContent;
+    
+    // Guardar ID y nombre para confirmación
+    document.getElementById('delete-list-id').value = listId;
+    document.getElementById('delete-list-name').textContent = listName;
+    
+    // Mostrar el modal
+    const deleteListModal = new bootstrap.Modal(document.getElementById('deleteListModal'));
+    deleteListModal.show();
+}
+
+// Eliminar una lista
+function deleteList() {
+    const listId = document.getElementById('delete-list-id').value;
+    
+    fetch(`/api/favorite_lists/${listId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById('deleteListModal')).hide();
+            
+            // Recargar listas
+            loadFavoriteLists('favorite-lists-container');
+            
+            // Mostrar mensaje de éxito
+            alert('Lista eliminada con éxito');
+        } else {
+            alert('Error al eliminar la lista: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error eliminando lista:', error);
+        alert('Error de conexión al eliminar la lista');
+    });
+}
+
+// Añadir un jugador a una lista de favoritos
+function addPlayerToList(listId, playerId) {
+    fetch(`/api/favorite_lists/${listId}/players`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            player_id: playerId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar UI
+            const listItem = document.querySelector(`#select-list-container [data-list-id="${listId}"]`);
+            if (listItem) {
+                listItem.classList.add('active');
+                
+                // Actualizar contador
+                const badge = listItem.querySelector('.badge');
+                if (badge) {
+                    badge.textContent = data.players.length;
+                }
+            }
+            
+            // Si es la lista por defecto, actualizar el estado de favorito del jugador
+            if (listId === 'default') {
+                // Actualizar el icono de favorito en la tarjeta del jugador
+                const player = allPlayers.find(p => p.id === playerId);
+                if (player) {
+                    player.favorite = true;
+                    
+                    const starIcon = document.querySelector(`.card[data-player-id="${playerId}"] .favorite-icon`);
+                    if (starIcon) {
+                        starIcon.classList.add('active');
+                    }
+                }
+            }
+            
+            // Mostrar mensaje de éxito
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 p-3';
+            toast.style.zIndex = '5';
+            toast.innerHTML = `
+                <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <strong class="me-auto">Jugador añadido</strong>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        Jugador añadido a la lista con éxito.
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+            
+            // Eliminar el toast después de 3 segundos
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        } else {
+            alert('Error al añadir el jugador a la lista: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error añadiendo jugador a la lista:', error);
+        alert('Error de conexión al añadir el jugador a la lista');
+    });
+}
+
+// Eliminar un jugador de una lista
+function removePlayerFromList(listId, playerId) {
+    fetch(`/api/favorite_lists/${listId}/players/${playerId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recargar detalles de la lista
+            const list = document.querySelector(`#favorite-lists-container [data-list-id="${listId}"]`);
+            if (list) {
+                // Actualizar contador
+                const badge = list.querySelector('.badge');
+                if (badge) {
+                    badge.textContent = data.players.length;
+                }
+                
+                // Simular click para recargar detalles
+                list.click();
+            }
+            
+            // Si es la lista por defecto, actualizar el estado de favorito del jugador
+            if (listId === 'default') {
+                // Actualizar el icono de favorito en la tarjeta del jugador
+                const player = allPlayers.find(p => p.id === playerId);
+                if (player) {
+                    player.favorite = false;
+                    
+                    const starIcon = document.querySelector(`.card[data-player-id="${playerId}"] .favorite-icon`);
+                    if (starIcon) {
+                        starIcon.classList.remove('active');
+                    }
+                    
+                    // Si el filtro de favoritos está activo, recargar lista
+                    if (currentFilters.favorites) {
+                        filterPlayers();
+                        displayPlayers();
+                    }
+                }
+            }
+        } else {
+            alert('Error al eliminar el jugador de la lista: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error eliminando jugador de la lista:', error);
+        alert('Error de conexión al eliminar el jugador de la lista');
+    });
+}

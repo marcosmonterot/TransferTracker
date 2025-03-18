@@ -73,16 +73,27 @@
     overflow-y: auto;
 }
 
-/* Football field background for cards */
+/* Player photo styling */
+.player-photo {
+    width: 120px;
+    height: 150px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Football field background for cards - light theme */
 .football-bg {
     background: linear-gradient(to bottom, 
-        rgba(0, 100, 0, 0.2),
-        rgba(0, 100, 0, 0.3)
+        rgba(240, 255, 240, 1),
+        rgba(245, 255, 245, 1)
     );
     background-size: 20px 20px;
     background-image: 
-        linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+        linear-gradient(to right, rgba(0, 100, 0, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 100, 0, 0.05) 1px, transparent 1px);
+    border: 1px solid #eee;
 }
 
 /* Error message */

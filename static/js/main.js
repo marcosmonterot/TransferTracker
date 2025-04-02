@@ -2,12 +2,26 @@
 let allPlayers = [];
 let filteredPlayers = [];
 let currentFilters = {
+    league: '',
     club: '',
     position: '',
     nationality: '',
     marketValue: '',
     favorites: false,
-    search: ''
+    search: '',
+    // Rango de valor de mercado personalizado
+    minMarketValue: null,
+    maxMarketValue: null,
+    // Rango de edad
+    minAge: null,
+    maxAge: null,
+    // Pie preferido
+    foot: '',
+    // Rango de altura
+    minHeight: null,
+    maxHeight: null,
+    // Contrato hasta
+    contract: ''
 };
 
 // DOM elements
@@ -38,6 +52,69 @@ document.addEventListener('DOMContentLoaded', () => {
     favoritesFilter.addEventListener('change', () => applyFilter('favorites', favoritesFilter.checked));
     sortSelect && sortSelect.addEventListener('change', sortPlayers);
     refreshButton.addEventListener('click', refreshData);
+    
+    // Nuevos filtros adicionales
+    
+    // Filtros de rango de valor de mercado
+    document.getElementById('min-value-filter').addEventListener('change', (e) => {
+        currentFilters.minMarketValue = e.target.value ? parseFloat(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    document.getElementById('max-value-filter').addEventListener('change', (e) => {
+        currentFilters.maxMarketValue = e.target.value ? parseFloat(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    // Filtros de rango de edad
+    document.getElementById('min-age-filter').addEventListener('change', (e) => {
+        currentFilters.minAge = e.target.value ? parseInt(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    document.getElementById('max-age-filter').addEventListener('change', (e) => {
+        currentFilters.maxAge = e.target.value ? parseInt(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    // Filtro de pie preferido
+    document.getElementById('foot-filter').addEventListener('change', (e) => {
+        currentFilters.foot = e.target.value;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    // Filtros de rango de altura
+    document.getElementById('min-height-filter').addEventListener('change', (e) => {
+        currentFilters.minHeight = e.target.value ? parseInt(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    document.getElementById('max-height-filter').addEventListener('change', (e) => {
+        currentFilters.maxHeight = e.target.value ? parseInt(e.target.value) : null;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
+    
+    // Filtro de contrato
+    document.getElementById('contract-filter').addEventListener('change', (e) => {
+        currentFilters.contract = e.target.value;
+        filterPlayers();
+        displayPlayers();
+        updateActiveFilters();
+    });
     
     // Setup favorite lists event listeners
     document.getElementById('new-list-form').addEventListener('submit', createNewList);
@@ -101,20 +178,57 @@ function showError(message) {
 
 // Populate filter dropdown options
 function populateFilterOptions() {
-    const clubs = new Set();
+    const leagues = new Set();
     const positions = new Set();
     const nationalities = new Set();
     
     allPlayers.forEach(player => {
-        clubs.add(player.club);
+        if (player.league) leagues.add(player.league);
         positions.add(player.position);
         nationalities.add(player.nationality);
     });
     
     // Add options to filters
-    populateSelectOptions(clubFilter, clubs);
+    const leagueFilter = document.getElementById('league-filter');
+    populateSelectOptions(leagueFilter, leagues);
     populateSelectOptions(positionFilter, positions);
     populateSelectOptions(nationalityFilter, nationalities);
+    
+    // Initial population of clubs
+    updateClubFilter();
+    
+    // Add event listener for league filter
+    leagueFilter.addEventListener('change', () => {
+        // When league changes, update club filter first
+        updateClubFilter();
+        // Then apply the league filter
+        applyFilter('league', leagueFilter.value);
+    });
+}
+
+// Update club filter based on selected league
+function updateClubFilter() {
+    const leagueFilter = document.getElementById('league-filter');
+    const selectedLeague = leagueFilter.value;
+    
+    // Get clubs for the selected league, or all clubs if no league is selected
+    const clubs = new Set();
+    allPlayers.forEach(player => {
+        if (!selectedLeague || player.league === selectedLeague) {
+            clubs.add(player.club);
+        }
+    });
+    
+    // Update club filter options
+    populateSelectOptions(clubFilter, clubs);
+    
+    // If current selected club is not in the filtered set, reset it
+    if (currentFilters.club && !clubs.has(currentFilters.club)) {
+        clubFilter.value = '';
+        currentFilters.club = '';
+        filterPlayers();
+        displayPlayers();
+    }
 }
 
 // Helper function to populate select elements
@@ -140,6 +254,11 @@ function filterPlayers() {
             !player.club.toLowerCase().includes(currentFilters.search.toLowerCase()) &&
             !player.nationality.toLowerCase().includes(currentFilters.search.toLowerCase()) &&
             !player.position.toLowerCase().includes(currentFilters.search.toLowerCase())) {
+            return false;
+        }
+        
+        // League filter
+        if (currentFilters.league && player.league !== currentFilters.league) {
             return false;
         }
         
@@ -175,6 +294,64 @@ function filterPlayers() {
                 case 'low':
                     if (player.percentile >= 40) return false;
                     break;
+            }
+        }
+        
+        // Custom market value range filter
+        if (currentFilters.minMarketValue !== null || currentFilters.maxMarketValue !== null) {
+            const value = parseMarketValue(player.market_value);
+            
+            if (currentFilters.minMarketValue !== null && value < currentFilters.minMarketValue) {
+                return false;
+            }
+            
+            if (currentFilters.maxMarketValue !== null && value > currentFilters.maxMarketValue) {
+                return false;
+            }
+        }
+        
+        // Age range filter
+        if (currentFilters.minAge !== null || currentFilters.maxAge !== null) {
+            const age = player.age ? parseInt(player.age) : 0;
+            
+            if (currentFilters.minAge !== null && age < currentFilters.minAge) {
+                return false;
+            }
+            
+            if (currentFilters.maxAge !== null && age > currentFilters.maxAge) {
+                return false;
+            }
+        }
+        
+        // Preferred foot filter
+        if (currentFilters.foot && player.foot !== currentFilters.foot) {
+            return false;
+        }
+        
+        // Height range filter
+        if (currentFilters.minHeight !== null || currentFilters.maxHeight !== null) {
+            const height = player.height ? parseInt(player.height) : 0;
+            
+            if (currentFilters.minHeight !== null && height < currentFilters.minHeight) {
+                return false;
+            }
+            
+            if (currentFilters.maxHeight !== null && height > currentFilters.maxHeight) {
+                return false;
+            }
+        }
+        
+        // Contract expiry filter
+        if (currentFilters.contract) {
+            if (currentFilters.contract === 'free') {
+                if (player.contract !== 'Free agent') {
+                    return false;
+                }
+            } else {
+                const contractYear = player.contract ? player.contract.split('.')[2] : null;
+                if (contractYear !== currentFilters.contract) {
+                    return false;
+                }
             }
         }
         
@@ -252,6 +429,18 @@ function updateActiveFilters() {
         });
     }
     
+    if (currentFilters.league) {
+        addFilterBadge('League', currentFilters.league, () => {
+            const leagueFilter = document.getElementById('league-filter');
+            leagueFilter.value = '';
+            currentFilters.league = '';
+            // Update club filter when league filter is removed
+            updateClubFilter();
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
     if (currentFilters.club) {
         addFilterBadge('Club', currentFilters.club, () => {
             clubFilter.value = '';
@@ -290,6 +479,90 @@ function updateActiveFilters() {
         addFilterBadge('Value', labels[currentFilters.marketValue], () => {
             marketValueFilter.value = '';
             currentFilters.marketValue = '';
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
+    // Custom market value range
+    if (currentFilters.minMarketValue !== null || currentFilters.maxMarketValue !== null) {
+        let rangeText = '';
+        if (currentFilters.minMarketValue !== null && currentFilters.maxMarketValue !== null) {
+            rangeText = `€${currentFilters.minMarketValue}m - €${currentFilters.maxMarketValue}m`;
+        } else if (currentFilters.minMarketValue !== null) {
+            rangeText = `≥ €${currentFilters.minMarketValue}m`;
+        } else if (currentFilters.maxMarketValue !== null) {
+            rangeText = `≤ €${currentFilters.maxMarketValue}m`;
+        }
+        
+        addFilterBadge('Market Value', rangeText, () => {
+            document.getElementById('min-value-filter').value = '';
+            document.getElementById('max-value-filter').value = '';
+            currentFilters.minMarketValue = null;
+            currentFilters.maxMarketValue = null;
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
+    // Age range
+    if (currentFilters.minAge !== null || currentFilters.maxAge !== null) {
+        let rangeText = '';
+        if (currentFilters.minAge !== null && currentFilters.maxAge !== null) {
+            rangeText = `${currentFilters.minAge} - ${currentFilters.maxAge} years`;
+        } else if (currentFilters.minAge !== null) {
+            rangeText = `≥ ${currentFilters.minAge} years`;
+        } else if (currentFilters.maxAge !== null) {
+            rangeText = `≤ ${currentFilters.maxAge} years`;
+        }
+        
+        addFilterBadge('Age', rangeText, () => {
+            document.getElementById('min-age-filter').value = '';
+            document.getElementById('max-age-filter').value = '';
+            currentFilters.minAge = null;
+            currentFilters.maxAge = null;
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
+    // Preferred foot
+    if (currentFilters.foot) {
+        addFilterBadge('Foot', currentFilters.foot, () => {
+            document.getElementById('foot-filter').value = '';
+            currentFilters.foot = '';
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
+    // Height range
+    if (currentFilters.minHeight !== null || currentFilters.maxHeight !== null) {
+        let rangeText = '';
+        if (currentFilters.minHeight !== null && currentFilters.maxHeight !== null) {
+            rangeText = `${currentFilters.minHeight} - ${currentFilters.maxHeight} cm`;
+        } else if (currentFilters.minHeight !== null) {
+            rangeText = `≥ ${currentFilters.minHeight} cm`;
+        } else if (currentFilters.maxHeight !== null) {
+            rangeText = `≤ ${currentFilters.maxHeight} cm`;
+        }
+        
+        addFilterBadge('Height', rangeText, () => {
+            document.getElementById('min-height-filter').value = '';
+            document.getElementById('max-height-filter').value = '';
+            currentFilters.minHeight = null;
+            currentFilters.maxHeight = null;
+            filterPlayers();
+            displayPlayers();
+        });
+    }
+    
+    // Contract expiry
+    if (currentFilters.contract) {
+        const contractText = currentFilters.contract === 'free' ? 'Free Agents' : `Expires ${currentFilters.contract}`;
+        addFilterBadge('Contract', contractText, () => {
+            document.getElementById('contract-filter').value = '';
+            currentFilters.contract = '';
             filterPlayers();
             displayPlayers();
         });
@@ -354,6 +627,20 @@ function createPlayerCard(player) {
         percentileClass = 'percentile-average';
     }
     
+    // Preparar los comentarios para mostrar
+    const hasComments = player.comments && player.comments.length > 0;
+    
+    // Generar HTML para los comentarios existentes
+    let commentsHtml = '';
+    if (hasComments) {
+        commentsHtml = player.comments.map(comment => `
+            <div class="comment-item mb-1 p-1 border-bottom">
+                <p class="small m-0">${comment.text}</p>
+                <small class="text-muted">${comment.timestamp}</small>
+            </div>
+        `).join('');
+    }
+    
     const col = document.createElement('div');
     col.className = 'col-md-6 col-lg-4 mb-4';
     
@@ -397,14 +684,65 @@ function createPlayerCard(player) {
                         <span><i class="fas fa-euro-sign me-2"></i>Market Value:</span>
                         <span class="fw-bold">${player.market_value}</span>
                     </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><i class="fas fa-globe me-2"></i>League:</span>
+                        <span class="fw-bold">${player.league || 'Unknown'}</span>
+                    </li>
                 </ul>
+                
+                <!-- Información adicional de Transfermarkt (colapsable) -->
+                <div class="accordion mt-3" id="accordion-${player.id}">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-${player.id}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#collapse-${player.id}" aria-expanded="false" aria-controls="collapse-${player.id}">
+                                Información adicional
+                            </button>
+                        </h2>
+                        <div id="collapse-${player.id}" class="accordion-collapse collapse" 
+                            aria-labelledby="heading-${player.id}" data-bs-parent="#accordion-${player.id}">
+                            <div class="accordion-body p-2">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-birthday-cake me-2"></i>Fecha de nacimiento:</span>
+                                        <span class="fw-bold">${player.birth_date || 'No disponible'}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-user me-2"></i>Edad:</span>
+                                        <span class="fw-bold">${player.age || 'No disponible'}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-ruler-vertical me-2"></i>Altura:</span>
+                                        <span class="fw-bold">${player.height || 'No disponible'}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-shoe-prints me-2"></i>Pie preferido:</span>
+                                        <span class="fw-bold">${player.preferred_foot || 'No disponible'}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-calendar-check me-2"></i>Fichado:</span>
+                                        <span class="fw-bold">${player.joined || 'No disponible'}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span><i class="fas fa-file-contract me-2"></i>Contrato hasta:</span>
+                                        <span class="fw-bold">${player.contract_expires || 'No disponible'}</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comentarios -->
                 <div class="mt-3">
-                    <div class="comment-box mb-2 ${player.comment ? '' : 'd-none'}" id="comment-box-${player.id}">
-                        <p class="small m-0"><i class="fas fa-comment me-2"></i>${player.comment || ''}</p>
+                    <div class="comment-box mb-2 ${hasComments ? '' : 'd-none'}" id="comment-box-${player.id}">
+                        <div class="comments-container" style="max-height: 150px; overflow-y: auto;">
+                            ${commentsHtml}
+                        </div>
                     </div>
                     <div class="input-group">
                         <input type="text" class="form-control form-control-sm" placeholder="Añadir comentario" 
-                               id="comment-input-${player.id}" value="${player.comment || ''}">
+                               id="comment-input-${player.id}">
                         <button class="btn btn-sm btn-outline-primary" onclick="saveComment('${player.id}')">
                             <i class="fas fa-save"></i>
                         </button>
@@ -479,6 +817,11 @@ function saveComment(playerId) {
     const commentInput = document.getElementById(`comment-input-${playerId}`);
     const comment = commentInput.value.trim();
     
+    if (!comment) {
+        alert('Por favor, introduce un comentario');
+        return;
+    }
+    
     fetch('/api/add_comment', {
         method: 'POST',
         headers: {
@@ -492,10 +835,10 @@ function saveComment(playerId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update the player in our arrays
+            // Actualizar el jugador en nuestros arrays
             const updatePlayer = player => {
                 if (player.id === playerId) {
-                    player.comment = comment;
+                    player.comments = data.comments;
                 }
                 return player;
             };
@@ -503,19 +846,26 @@ function saveComment(playerId) {
             allPlayers = allPlayers.map(updatePlayer);
             filteredPlayers = filteredPlayers.map(updatePlayer);
             
-            // Update the comment box
+            // Actualizar la caja de comentarios
             const commentBox = document.getElementById(`comment-box-${playerId}`);
-            if (comment) {
-                commentBox.querySelector('p').innerHTML = `<i class="fas fa-comment me-2"></i>${comment}`;
-                commentBox.classList.remove('d-none');
-            } else {
-                commentBox.classList.add('d-none');
-            }
+            const commentsContainer = commentBox.querySelector('.comments-container');
             
-            // Show a temporary success message
-            const commentInput = document.getElementById(`comment-input-${playerId}`);
+            // Generar HTML para los comentarios
+            const commentsHtml = data.comments.map(comment => `
+                <div class="comment-item mb-1 p-1 border-bottom">
+                    <p class="small m-0">${comment.text}</p>
+                    <small class="text-muted">${comment.timestamp}</small>
+                </div>
+            `).join('');
+            
+            // Actualizar la UI
+            commentsContainer.innerHTML = commentsHtml;
+            commentBox.classList.remove('d-none');
+            
+            // Limpiar el input y mostrar mensaje de éxito
+            commentInput.value = '';
             const originalPlaceholder = commentInput.placeholder;
-            commentInput.placeholder = 'Comment saved!';
+            commentInput.placeholder = '¡Comentario guardado!';
             commentInput.classList.add('is-valid');
             
             setTimeout(() => {
@@ -531,21 +881,50 @@ function saveComment(playerId) {
 function resetFilters() {
     // Reset filter values
     searchInput.value = '';
-    clubFilter.value = '';
+    const leagueFilter = document.getElementById('league-filter');
+    if (leagueFilter) leagueFilter.value = '';
     positionFilter.value = '';
     nationalityFilter.value = '';
     marketValueFilter.value = '';
     favoritesFilter.checked = false;
     
+    // Reset range inputs
+    document.getElementById('min-value-filter').value = '';
+    document.getElementById('max-value-filter').value = '';
+    document.getElementById('min-age-filter').value = '';
+    document.getElementById('max-age-filter').value = '';
+    document.getElementById('min-height-filter').value = '';
+    document.getElementById('max-height-filter').value = '';
+    
+    // Reset select inputs
+    document.getElementById('foot-filter').value = '';
+    document.getElementById('contract-filter').value = '';
+    
+    // Reset club filter after league filter
+    clubFilter.value = '';
+    
     // Reset filter object
     currentFilters = {
+        league: '',
         club: '',
         position: '',
         nationality: '',
         marketValue: '',
         favorites: false,
-        search: ''
+        search: '',
+        minMarketValue: null,
+        maxMarketValue: null,
+        minAge: null,
+        maxAge: null,
+        foot: '',
+        minHeight: null,
+        maxHeight: null,
+        contract: ''
     };
+    
+    // Update club filter with all clubs (since no league is selected)
+    updateClubFilter();
+    clubFilter.value = '';
     
     // Reset filtered players
     filteredPlayers = [...allPlayers];

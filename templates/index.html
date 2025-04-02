@@ -19,6 +19,14 @@
                         </div>
                     </div>
                     
+                    <!-- Filter dropdown for league -->
+                    <div class="col-md-3">
+                        <label for="league-filter" class="form-label">League</label>
+                        <select id="league-filter" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    
                     <!-- Filter dropdown for club -->
                     <div class="col-md-3">
                         <label for="club-filter" class="form-label">Club</label>
@@ -55,12 +63,58 @@
                         </select>
                     </div>
                     
-                    <!-- Sorting info (always sorted by percentile descending) -->
+                    <!-- Custom Market Value Range Filter -->
                     <div class="col-md-3">
-                        <div class="alert alert-info mb-0 py-2">
-                            <i class="fas fa-sort-amount-down me-2"></i>
-                            <strong>Sorted by:</strong> Percentile (High to Low)
+                        <label class="form-label">Custom Market Value (€m)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="min-value-filter" placeholder="Min" min="0" step="1">
+                            <span class="input-group-text">to</span>
+                            <input type="number" class="form-control" id="max-value-filter" placeholder="Max" min="0" step="1">
                         </div>
+                    </div>
+                    
+                    <!-- Age Range Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Age Range</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="min-age-filter" placeholder="Min" min="15" max="45" step="1">
+                            <span class="input-group-text">to</span>
+                            <input type="number" class="form-control" id="max-age-filter" placeholder="Max" min="15" max="45" step="1">
+                        </div>
+                    </div>
+                    
+                    <!-- Preferred Foot Filter -->
+                    <div class="col-md-3">
+                        <label for="foot-filter" class="form-label">Preferred Foot</label>
+                        <select id="foot-filter" class="form-select">
+                            <option value="">All</option>
+                            <option value="Right">Right</option>
+                            <option value="Left">Left</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Height Range Filter -->
+                    <div class="col-md-3">
+                        <label class="form-label">Height Range (cm)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="min-height-filter" placeholder="Min" min="150" max="220" step="1">
+                            <span class="input-group-text">to</span>
+                            <input type="number" class="form-control" id="max-height-filter" placeholder="Max" min="150" max="220" step="1">
+                        </div>
+                    </div>
+                    
+                    <!-- Contract Expiry Filter -->
+                    <div class="col-md-3">
+                        <label for="contract-filter" class="form-label">Contract Expires</label>
+                        <select id="contract-filter" class="form-select">
+                            <option value="">All</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="free">Free Agents</option>
+                        </select>
                     </div>
                     
                     <!-- Favorites checkbox -->
@@ -70,6 +124,14 @@
                             <label class="form-check-label" for="favorites-filter">
                                 <i class="fas fa-star text-warning me-1"></i>Only show favorites
                             </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sorting info (always sorted by percentile descending) -->
+                    <div class="col-md-3">
+                        <div class="alert alert-info mb-0 py-2">
+                            <i class="fas fa-sort-amount-down me-2"></i>
+                            <strong>Sorted by:</strong> Percentile (High to Low)
                         </div>
                     </div>
                     

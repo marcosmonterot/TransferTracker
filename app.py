@@ -129,10 +129,27 @@ def get_players():
     players = get_players_data()
     user_data = get_user_data()
     
-    # Add favorite status to each player
+    # Add favorite status and comments to each player
     for player in players:
         player['favorite'] = player['id'] in user_data.get('favorites', [])
-        player['comment'] = user_data.get('comments', {}).get(player['id'], '')
+        
+        # Manejamos los comentarios según el nuevo formato (lista de objetos con texto y timestamp)
+        player_comments = user_data.get('comments', {}).get(player['id'], [])
+        
+        # Comprobamos si los comentarios están en el formato antiguo (string) y los convertimos
+        if player_comments and isinstance(player_comments, str):
+            # Convertir el comentario antiguo al nuevo formato
+            player_comments = [{
+                'text': player_comments,
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }]
+            # Actualizar en los datos de usuario
+            if 'comments' not in user_data:
+                user_data['comments'] = {}
+            user_data['comments'][player['id']] = player_comments
+            save_user_data(user_data)
+        
+        player['comments'] = player_comments
     
     # Sort players by percentile in descending order (highest first)
     players = sorted(players, key=lambda x: x.get('percentile', 0), reverse=True)
@@ -196,18 +213,34 @@ def add_comment():
     player_id = request.json.get('player_id')
     comment = request.json.get('comment')
     
-    if not player_id:
-        return jsonify({"success": False, "message": "No player ID provided"}), 400
+    if not player_id or not comment:
+        return jsonify({"success": False, "message": "Player ID and comment are required"}), 400
     
     user_data = get_user_data()
     
+    # Inicializar estructura para comentarios si no existe
     if 'comments' not in user_data:
         user_data['comments'] = {}
+        
+    # Inicializar lista de comentarios para este jugador si no existe
+    if player_id not in user_data['comments']:
+        user_data['comments'][player_id] = []
     
-    user_data['comments'][player_id] = comment
+    # Crear nuevo comentario con timestamp
+    new_comment = {
+        'text': comment,
+        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+    
+    # Añadir el comentario a la lista de comentarios del jugador
+    user_data['comments'][player_id].append(new_comment)
+    
     save_user_data(user_data)
     
-    return jsonify({"success": True})
+    return jsonify({
+        "success": True,
+        "comments": user_data['comments'][player_id]
+    })
 
 # API routes for favorite lists
 @app.route('/api/favorite_lists', methods=['GET'])
